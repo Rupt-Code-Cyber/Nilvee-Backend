@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Module 1 Base Model (Used to verify baseline engine connectivity)
+model MigrationCheck {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+}
+
+// Module 2 Core Model — Engineering Agency Services
+model Service {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(100)
+  slug        String   @unique @db.VarChar(100)
+  description String   @db.Text
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  orders      Order[]
+
+  @@map("services")
+}
+
+// Module 3 - Development Order Transaction Status Codes Enumeration
+enum OrderStatus {
+  PENDING
+  REVIEWING
+  ACCEPTED
+  REJECTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+// Module 3 - Agency Client Development Requests Transaction Blueprint
+model Order {
+  id           String      @id @default(uuid()) @db.Uuid
+  clientName   String      @db.VarChar(100)
+  email        String      @db.VarChar(255)
+  phone        String?     @db.VarChar(30)
+  company      String?     @db.VarChar(100)
+  serviceId    String      @db.Uuid
+  projectTitle String      @db.VarChar(150)
+  description  String      @db.Text
+  budget       Decimal?    @db.Decimal(12, 2)
+  deadline     DateTime?   @db.Date
+  status       OrderStatus @default(PENDING)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  deletedAt    DateTime?
+
+  service      Service     @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@index([serviceId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("orders")
+}
+
+// Module 4 - General Client Inquiries Status Codes Enumeration
+enum InquiryStatus {
+  UNREAD
+  READ
+  RESPONDED
+  ARCHIVED
+}
+
+// Module 4 - General Visitor Contact & Partnership Requests Transaction Blueprint
+model Inquiry {
+  id        String        @id @default(uuid()) @db.Uuid
+  name      String        @db.VarChar(100)
+  email     String        @db.VarChar(255)
+  phone     String?       @db.VarChar(30)
+  company   String?       @db.VarChar(100)
+  subject   String        @db.VarChar(150)
+  message   String        @db.Text
+  status    InquiryStatus @default(UNREAD)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("inquiries")
+}
+
+// Module 5 - Administrative Operational Identity Blueprint
+model Admin {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @db.VarChar(255)
+  name         String   @db.VarChar(100)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("admins")
+}

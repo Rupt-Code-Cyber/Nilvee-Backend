@@ -1,0 +1,45 @@
+
+services:
+  database:
+    image: postgres:16-alpine
+    container_name: nilvee_postgres_dev
+    environment:
+      POSTGRES_USER: nilvee_user
+      POSTGRES_PASSWORD: nilvee_secure_pass
+      POSTGRES_DB: nilvee_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - nilvee_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nilvee_user -d nilvee_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: nilvee-backend:foundation
+    container_name: nilvee_api_dev
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://nilvee_user:nilvee_secure_pass@database:5432/nilvee_db?schema=public
+      CORS_ORIGIN: "*"
+      LOG_LEVEL: debug
+    ports:
+      - "3000:3000"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - nilvee_network
+
+volumes:
+  postgres_data:
+
+networks:
+  nilvee_network:
+    driver: bridge
