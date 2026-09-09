@@ -117,11 +117,22 @@ export async function createApplication() {
     });
   });
 
+  // Module Core Routes
   await app.register(registerV1Routes, { prefix: '/api/v1' });
   await app.register(registerAuthRoutes, { prefix: '/api/v1/auth' });
   await app.register(registerServiceRoutes, { prefix: '/api/v1/services' });
   await app.register(registerOrderRoutes, { prefix: '/api/v1/orders' });
   await app.register(registerInquiryRoutes, { prefix: '/api/v1/inquiries' });
+
+  // 🚀 FIXED: Baseline root endpoint for automated infrastructure keep-alive pings
+  app.get('/', async (_request, reply) => {
+    return reply.status(200).send({
+      status: 'online',
+      agency: 'Nilvee DevOps Infrastructure',
+      timestamp: new Date().toISOString(),
+      documentation: '/docs'
+    });
+  });
 
   return app;
 }
