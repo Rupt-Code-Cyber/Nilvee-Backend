@@ -50,7 +50,9 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install Application Infrastructure Dependencies
-        run: pnpm install --no-frozen-lockfile --only-built-dependencies=protobufjs
+        run: pnpm install --no-frozen-lockfile
+        env:
+          PNPM_CONFIG_ONLY_BUILT_DEPENDENCIES: protobufjs
 
       - name: Synchronize Database Client Object Interfaces
         run: pnpm prisma generate
