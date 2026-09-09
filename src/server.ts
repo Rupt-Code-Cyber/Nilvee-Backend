@@ -1,27 +1,3 @@
-// @ts-ignore
-import { NodeSDK } from '@opentelemetry/sdk-node';
-// @ts-ignore
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-// @ts-ignore
-import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
-// @ts-ignore
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
-
-if (process.env.NODE_ENV === 'production' && process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
-  const sdk = new NodeSDK({
-    traceExporter: new OTLPTraceExporter(),
-    metricExporter: new OTLPMetricExporter(),
-    instrumentations: [
-      getNodeAutoInstrumentations({
-        '@opentelemetry/instrumentation-fs': { enabled: false }
-      })
-    ]
-  });
-
-  sdk.start();
-  console.log('📡 OpenTelemetry Engine fully active. Streaming runtime metrics to Grafana Cloud...');
-}
-
 import { createApplication } from './app.js';
 
 async function startServer() {

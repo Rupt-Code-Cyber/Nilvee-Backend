@@ -51,8 +51,6 @@ jobs:
 
       - name: Install Application Infrastructure Dependencies
         run: pnpm install --no-frozen-lockfile
-        env:
-          PNPM_CONFIG_ONLY_BUILT_DEPENDENCIES: protobufjs
 
       - name: Synchronize Database Client Object Interfaces
         run: pnpm prisma generate
@@ -71,6 +69,7 @@ jobs:
       - name: Compile and Export Target JavaScript Distribution Build
         run: pnpm build
 
+      # 🚀 CD STEP: Triggers Render ONLY on main pushes
       - name: Dispatch Secure Deployment Signal to Production Hosting
         if: success() && github.ref == 'refs/heads/main'
         env:
