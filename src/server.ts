@@ -1,17 +1,18 @@
-// 🚀 LINE 1: OpenTelemetry initialization MUST happen before any other package loads
+// @ts-ignore
 import { NodeSDK } from '@opentelemetry/sdk-node';
+// @ts-ignore
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+// @ts-ignore
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
+// @ts-ignore
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 
-// Only load telemetry tracking if running in production mode with active configurations
 if (process.env.NODE_ENV === 'production' && process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
   const sdk = new NodeSDK({
     traceExporter: new OTLPTraceExporter(),
     metricExporter: new OTLPMetricExporter(),
     instrumentations: [
       getNodeAutoInstrumentations({
-        // Turn off local file system tracking to keep your Prometheus metrics uncluttered
         '@opentelemetry/instrumentation-fs': { enabled: false }
       })
     ]
@@ -21,8 +22,6 @@ if (process.env.NODE_ENV === 'production' && process.env.OTEL_EXPORTER_OTLP_ENDP
   console.log('📡 OpenTelemetry Engine fully active. Streaming runtime metrics to Grafana Cloud...');
 }
 
-// -----------------------------------------------------------------------------
-// Your existing clean application imports and execution logic follow below:
 import { createApplication } from './app.js';
 
 async function startServer() {
