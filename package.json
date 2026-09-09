@@ -52,6 +52,12 @@
     "fastify-type-provider-zod": "^7.0.0",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.23.0",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/auto-instrumentations-node": "^0.56.0",
+    "@opentelemetry/exporter-metrics-otlp-proto": "^0.57.0",
+    "@opentelemetry/exporter-trace-otlp-proto": "^0.57.0",
+    "@opentelemetry/sdk-node": "^0.57.0"
+
   }
 }
