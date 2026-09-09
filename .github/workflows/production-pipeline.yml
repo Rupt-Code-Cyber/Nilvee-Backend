@@ -1,0 +1,64 @@
+name: Core API Quality Verification
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-and-build:
+    name: Core API Quality Verification
+    runs-on: ubuntu-latest
+    environment: production
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: nilvee_user
+          POSTGRES_PASSWORD: nilvee_secure_pass
+          POSTGRES_DB: nilvee_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code Repository Mappings
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment Runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm Package Manager Utilities
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Install Application Infrastructure Dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Synchronize Database Client Object Interfaces
+        run: pnpm prisma generate
+        env:
+          DATABASE_URL: "postgresql://nilvee_user:nilvee_secure_pass@localhost:5432/nilvee_db?schema=public"
+
+      - name: Compile and Export Target JavaScript Distribution Build
+        run: pnpm build
+
+      - name: Dispatch Secure Deployment Signal to Production Hosting
+        if: success() && github.ref == 'refs/heads/main'
+        env:
+          PRODUCTION_DEPLOY_URL: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$PRODUCTION_DEPLOY_URL" ]; then
+            echo "Pipeline Error: Operational Token String Empty."
+            exit 1
+          fi
+          curl -X POST -s -o /dev/null -w "%{http_code}" "$PRODUCTION_DEPLOY_URL"
