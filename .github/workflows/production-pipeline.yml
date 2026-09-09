@@ -42,7 +42,8 @@ jobs:
           version: latest
 
       - name: Install Application Infrastructure Dependencies
-        run: pnpm install --no-frozen-lockfile
+        # 🚀 FIXED: Explicitly authorizes protobufjs build scripts during CI execution
+        run: pnpm install --no-frozen-lockfile --only-built-dependencies=protobufjs
 
       - name: Synchronize Database Client Object Interfaces
         run: pnpm prisma generate
