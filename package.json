@@ -58,6 +58,5 @@
     "@opentelemetry/exporter-metrics-otlp-proto": "^0.57.0",
     "@opentelemetry/exporter-trace-otlp-proto": "^0.57.0",
     "@opentelemetry/sdk-node": "^0.57.0"
-
   }
 }
