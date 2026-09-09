@@ -28,20 +28,24 @@ jobs:
           --health-retries 5
 
     steps:
+      # 1. ALWAYS CHECKOUT CODE FIRST SO THE LOCKFILE LIVES ON THE RUNNER
       - name: Checkout Code Repository Mappings
         uses: actions/checkout@v4
 
+      # 2. SET UP PNPM BINARY UTILITIES
       - name: Setup pnpm Package Manager Utilities
         uses: pnpm/action-setup@v3
         with:
           version: 11
 
+      # 3. CONFIGURE RUNTIME ENVIRONMENT & INTERCEPT LOCAL CACHES Safely
       - name: Setup Node.js Environment Runtime
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: 'pnpm' # Native pnpm caching instead of separate actions/cache
+          cache: 'pnpm'
 
+      # 4. RUN COMPILER PROCESSES & PIPELINE SEQUENCES
       - name: Install Application Infrastructure Dependencies
         run: pnpm install --no-frozen-lockfile
 
@@ -50,17 +54,14 @@ jobs:
         env:
           DATABASE_URL: "postgresql://nilvee_user:nilvee_secure_pass@localhost:5432/nilvee_db?schema=public"
 
-      - name: Static Analysis TypeScript Compiler Code Evaluation
-        run: pnpm tsc --noEmit
+      - name: Compile and Export Target JavaScript Distribution Build
+        run: pnpm build
 
       - name: Execute Endpoint Integration Testing Suite
         run: node --test dist/tests/api.test.js || true
         env:
           DATABASE_URL: "postgresql://nilvee_user:nilvee_secure_pass@localhost:5432/nilvee_db?schema=public"
           JWT_SECRET: "ci-pipeline-temporary-high-entropy-signature-key-2026"
-
-      - name: Compile and Export Target JavaScript Distribution Build
-        run: pnpm build
 
       # 🚀 CD STEP: Triggers Render ONLY on main pushes
       - name: Dispatch Secure Deployment Signal to Production Hosting
