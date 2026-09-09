@@ -86,3 +86,4 @@ pnpm build
 # 3. Boot up the hardened Docker container environment in the background
 docker compose up --build -d
 ```
+# Production Release Synchronization v1.0.0
