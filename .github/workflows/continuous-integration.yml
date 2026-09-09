@@ -31,23 +31,16 @@ jobs:
       - name: Checkout Code Repository Mappings
         uses: actions/checkout@v4
 
-      - name: Setup Node.js Environment Runtime
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
       - name: Setup pnpm Package Manager Utilities
         uses: pnpm/action-setup@v3
         with:
           version: 11
 
-      - name: Load and Store Dependency Cache
-        uses: actions/cache@v4
+      - name: Setup Node.js Environment Runtime
+        uses: actions/setup-node@v4
         with:
-          path: ~/.local/share/pnpm/store
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          node-version: 24
+          cache: 'pnpm' # Native pnpm caching instead of separate actions/cache
 
       - name: Install Application Infrastructure Dependencies
         run: pnpm install --no-frozen-lockfile

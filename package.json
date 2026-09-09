@@ -5,13 +5,13 @@
   "main": "dist/server.js",
   "type": "module",
   "scripts": {
-    "build": "pnpm tsc",
+    "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "pnpm build && pnpm start",
-    "db:migrate": "pnpm prisma migrate dev",
-    "db:deploy": "pnpm prisma migrate deploy",
-    "db:studio": "pnpm prisma studio",
-    "typecheck": "pnpm tsc --noEmit",
+    "dev": "tsx watch src/server.ts",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts",
     "test": "node --env-file=.env --test dist/tests/api.test.js"
@@ -23,7 +23,6 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/bcryptjs": "^3.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.23.1",
@@ -37,6 +36,14 @@
   "engines": {
     "node": ">=24.0.0",
     "pnpm": ">=8.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "esbuild",
+      "prisma",
+      "protobufjs"
+    ]
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",
