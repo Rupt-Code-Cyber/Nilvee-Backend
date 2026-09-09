@@ -10,6 +10,9 @@ jobs:
   validate-and-build:
     name: Core API Quality Verification
     runs-on: ubuntu-latest
+    
+    # ⚠️ CRITICAL MERGE: Maps access to your secured production environment secrets
+    environment: production 
 
     # Isolated operational mock database runner engine instance
     services:
@@ -68,3 +71,15 @@ jobs:
 
       - name: Compile and Export Target JavaScript Distribution Build
         run: pnpm build
+
+      # 🚀 NEW CD STEP: Safely triggers Render ONLY on pushes to the main branch after tests pass
+      - name: Dispatch Secure Deployment Signal to Production Hosting
+        if: success() && github.ref == 'refs/heads/main'
+        env:
+          PRODUCTION_DEPLOY_URL: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$PRODUCTION_DEPLOY_URL" ]; then
+            echo "Pipeline Error: Operational Token String Empty."
+            exit 1
+          fi
+          curl -X POST -s -o /dev/null -w "%{http_code}" "$PRODUCTION_DEPLOY_URL"
