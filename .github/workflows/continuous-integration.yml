@@ -50,15 +50,14 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      # FIXED: Swapped to path-based filesystem scanning to prevent the BASE/HEAD identical-commit error on pushes
+      # SECURITY: Path-based filesystem scanning protects pushes from BASE/HEAD evaluation errors
       - name: Run Trufflehog Secret Scan
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
           extra_args: --debug --results=verified
 
-      # Uses pnpm/setup@v2 to handle pnpm v11+ standalone architecture.
-      # Utilises the precise parameter 'frozen-lockfile: true' to enforce strict lock parity.
+      # standalone native pnpm v11+ environment provisioning step
       - name: Install pnpm & Initialize JavaScript Runtime
         uses: pnpm/setup@v2
         with:
@@ -96,7 +95,7 @@ jobs:
           JWT_SECRET: "ci-pipeline-temporary-high-entropy-signature-key-2026"
         run: pnpm test
 
-      # CD STEP: Safely triggers deployment signal onto Render once validation gates pass.
+      # CD STEP: Safely triggers deployment signal onto Render once validation gates pass cleanly.
       - name: Dispatch Secure Deployment Signal to Production Hosting
         if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'master')
         env:
@@ -111,7 +110,7 @@ jobs:
             TARGET_URL="${PRODUCTION_DEPLOY_URL}&ref=${{ github.sha }}"
           else
             TARGET_URL="${PRODUCTION_DEPLOY_URL}?ref=${{ github.sha }}"
-          end
+          fi # FIXED: Successfully normalized Bash statement termination closure from 'end' to 'fi'
 
           echo "🚀 Quality checks complete. Initiating atomic deployment for commit: ${{ github.sha }}"
           HTTP_STATUS=$(curl -s -o response_output.txt -w "%{http_code}" -X POST "$TARGET_URL")
