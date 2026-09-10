@@ -3,14 +3,30 @@ name: Nilvee Backend Continuous Integration
 on:
   push:
     branches: [ main, master, dev ]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'docs/**'
   pull_request:
     branches: [ main, master ]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'docs/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
 
 jobs:
   validate-and-build:
     name: Core API Quality Verification
     runs-on: ubuntu-latest
-    environment: production 
 
     services:
       postgres:
@@ -28,49 +44,82 @@ jobs:
           --health-retries 5
 
     steps:
-      # 1. ALWAYS CHECKOUT CODE FIRST SO THE LOCKFILE LIVES ON THE RUNNER
       - name: Checkout Code Repository Mappings
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
 
-      # 2. SET UP PNPM BINARY UTILITIES
-      - name: Setup pnpm Package Manager Utilities
-        uses: pnpm/action-setup@v3
+      - name: Run Trufflehog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --results=verified
+
+      # Uses pnpm/setup@v2 to handle pnpm v11+ standalone architecture.
+      # Utilises the precise parameter 'frozen-lockfile: true' to enforce strict lock parity.
+      - name: Install pnpm & Initialize JavaScript Runtime
+        uses: pnpm/setup@v2
         with:
           version: 11
+          runtime: node@24
+          cache: true
+          frozen-lockfile: true
 
-      # 3. CONFIGURE RUNTIME ENVIRONMENT & INTERCEPT LOCAL CACHES Safely
-      - name: Setup Node.js Environment Runtime
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      # 4. RUN COMPILER PROCESSES & PIPELINE SEQUENCES
-      - name: Install Application Infrastructure Dependencies
-        run: pnpm install --no-frozen-lockfile
+      - name: Audit Production Dependencies
+        run: pnpm audit --prod
 
       - name: Synchronize Database Client Object Interfaces
-        run: pnpm prisma generate
         env:
           DATABASE_URL: "postgresql://nilvee_user:nilvee_secure_pass@localhost:5432/nilvee_db?schema=public"
+        run: pnpm prisma generate
 
       - name: Compile and Export Target JavaScript Distribution Build
-        run: pnpm build
+        run: pnpm run build
+
+      - name: Await Local Database Readiness Verification
+        run: |
+          until docker exec ${{ job.services.postgres.id }} pg_isready -U nilvee_user -d nilvee_db; do
+            echo "⏳ Awaiting local database network interface binding..."
+            sleep 1
+          done
+
+      - name: Apply and Validate Database Migration Delta Scripts
+        env:
+          DATABASE_URL: "postgresql://nilvee_user:nilvee_secure_pass@localhost:5432/nilvee_db?schema=public"
+        run: pnpm prisma migrate deploy
 
       - name: Execute Endpoint Integration Testing Suite
-        run: node --test dist/tests/api.test.js || true
         env:
           DATABASE_URL: "postgresql://nilvee_user:nilvee_secure_pass@localhost:5432/nilvee_db?schema=public"
           JWT_SECRET: "ci-pipeline-temporary-high-entropy-signature-key-2026"
+        run: pnpm test
 
-      # 🚀 CD STEP: Triggers Render ONLY on main pushes
       - name: Dispatch Secure Deployment Signal to Production Hosting
-        if: success() && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'master')
         env:
           PRODUCTION_DEPLOY_URL: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
           if [ -z "$PRODUCTION_DEPLOY_URL" ]; then
-            echo "Pipeline Error: Operational Token String Empty."
+            echo "❌ Pipeline Error: RENDER_DEPLOY_HOOK secret is empty or unconfigured."
             exit 1
           fi
-          curl -X POST -s -o /dev/null -w "%{http_code}" "$PRODUCTION_DEPLOY_URL"
+
+          if [[ "$PRODUCTION_DEPLOY_URL" == *"\?"* ]]; then
+            TARGET_URL="${PRODUCTION_DEPLOY_URL}&ref=${{ github.sha }}"
+          else
+            TARGET_URL="${PRODUCTION_DEPLOY_URL}?ref=${{ github.sha }}"
+          fi
+
+          echo "🚀 Quality checks complete. Initiating atomic deployment for commit: ${{ github.sha }}"
+          HTTP_STATUS=$(curl -s -o response_output.txt -w "%{http_code}" -X POST "$TARGET_URL")
+
+          if [ "$HTTP_STATUS" -ne 200 ] && [ "$HTTP_STATUS" -ne 201 ] && [ "$HTTP_STATUS" -ne 202 ]; then
+            echo "❌ Render server registration rejected with status code: $HTTP_STATUS"
+            echo "📋 API Response diagnostics data:"
+            cat response_output.txt
+            exit 1
+          fi
+          echo "✅ Render accepted production deploy signals flawlessly."
