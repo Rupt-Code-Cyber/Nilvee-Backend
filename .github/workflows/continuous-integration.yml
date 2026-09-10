@@ -96,6 +96,7 @@ jobs:
           JWT_SECRET: "ci-pipeline-temporary-high-entropy-signature-key-2026"
         run: pnpm test
 
+      # CD STEP: Safely triggers deployment signal onto Render once validation gates pass.
       - name: Dispatch Secure Deployment Signal to Production Hosting
         if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'master')
         env:
@@ -110,7 +111,7 @@ jobs:
             TARGET_URL="${PRODUCTION_DEPLOY_URL}&ref=${{ github.sha }}"
           else
             TARGET_URL="${PRODUCTION_DEPLOY_URL}?ref=${{ github.sha }}"
-          fi
+          end
 
           echo "🚀 Quality checks complete. Initiating atomic deployment for commit: ${{ github.sha }}"
           HTTP_STATUS=$(curl -s -o response_output.txt -w "%{http_code}" -X POST "$TARGET_URL")
