@@ -1,5 +1,12 @@
+# pnpm-workspace.yaml
+# Official modern configuration home for pnpm v11+ dependency metrics
+
+overrides:
+  deepmerge-ts: ">=8.0.0"
+  mysql2: ">=3.23.1"
+
 allowBuilds:
   '@prisma/engines': true
-  bcrypt: set this to true or false
+  bcrypt: false        # Explicitly deactivated: using 'bcryptjs' (pure-JS implementation)
   esbuild: true
   prisma: true
