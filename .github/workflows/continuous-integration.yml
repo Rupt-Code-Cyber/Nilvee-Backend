@@ -50,12 +50,11 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
+      # FIXED: Swapped to path-based filesystem scanning to prevent the BASE/HEAD identical-commit error on pushes
       - name: Run Trufflehog Secret Scan
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
           extra_args: --debug --results=verified
 
       # Uses pnpm/setup@v2 to handle pnpm v11+ standalone architecture.
