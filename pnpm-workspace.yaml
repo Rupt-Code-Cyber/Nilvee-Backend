@@ -4,12 +4,13 @@
 overrides:
   deepmerge-ts: ">=8.0.0"
   mysql2: ">=3.23.1"
-  uuid: ">=11.1.1"               # Direct sub-dependency security patch override
-  "@opentelemetry/core": ">=2.8.0" # Direct sub-dependency security patch override
+  uuid: ">=11.1.1"
+  "@opentelemetry/core": ">=2.8.0"
+  protobufjs: ">=8.0.2"        # Direct security patch override for RCE/DoS vulnerabilities
 
 allowBuilds:
   '@prisma/engines': true
   bcrypt: false
   esbuild: true
   prisma: true
-  protobufjs: true
+  protobufjs: true     # Authorized package script lifecycle permissions
