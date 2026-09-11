@@ -1,5 +1,5 @@
 # pnpm-workspace.yaml
-# Official modern configuration home for pnpm v11+ dependency metrics
+# Modern configuration home for pnpm v11+ dependency metrics
 
 overrides:
   deepmerge-ts: ">=8.0.0"
@@ -10,3 +10,4 @@ allowBuilds:
   bcrypt: false        # Explicitly deactivated: using 'bcryptjs' (pure-JS implementation)
   esbuild: true
   prisma: true
+  protobufjs: true     # FIXED: Whitelists the OpenTelemetry protobuf compiler to pass CI builds
