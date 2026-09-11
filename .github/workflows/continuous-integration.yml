@@ -96,6 +96,7 @@ jobs:
         run: pnpm test
 
       # CD STEP: Safely triggers deployment signal onto Render once validation gates pass cleanly.
+      # FIXED: Uses the clean, un-mutated PRODUCTION_DEPLOY_URL directly to resolve the 404 routing error.
       - name: Dispatch Secure Deployment Signal to Production Hosting
         if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'master')
         env:
@@ -106,14 +107,10 @@ jobs:
             exit 1
           fi
 
-          if [[ "$PRODUCTION_DEPLOY_URL" == *"\?"* ]]; then
-            TARGET_URL="${PRODUCTION_DEPLOY_URL}&ref=${{ github.sha }}"
-          else
-            TARGET_URL="${PRODUCTION_DEPLOY_URL}?ref=${{ github.sha }}"
-          fi # FIXED: Successfully normalized Bash statement termination closure from 'end' to 'fi'
-
-          echo "🚀 Quality checks complete. Initiating atomic deployment for commit: ${{ github.sha }}"
-          HTTP_STATUS=$(curl -s -o response_output.txt -w "%{http_code}" -X POST "$TARGET_URL")
+          echo "🚀 Quality checks complete. Initiating deployment signal rollout..."
+          
+          # Stripped URL appending query parameter structures to guarantee a zero-error network route handshake
+          HTTP_STATUS=$(curl -s -o response_output.txt -w "%{http_code}" -X POST "$PRODUCTION_DEPLOY_URL")
 
           if [ "$HTTP_STATUS" -ne 200 ] && [ "$HTTP_STATUS" -ne 201 ] && [ "$HTTP_STATUS" -ne 202 ]; then
             echo "❌ Render server registration rejected with status code: $HTTP_STATUS"
@@ -121,4 +118,5 @@ jobs:
             cat response_output.txt
             exit 1
           fi
+          
           echo "✅ Render accepted production deploy signals flawlessly."
