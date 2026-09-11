@@ -1,7 +1,6 @@
 import { prisma } from '../../config/database.js';
 import { CreateOrderInput, UpdateOrderInput, ListOrdersQueryInput, OrderResponse } from './order.types.js';
 
-// Base module error translation utility to bridge exceptions cleanly into Fastify
 class OrderOperationalError extends Error {
   constructor(public statusCode: number, message: string, overrideName: string = 'BadRequest') {
     super(message);
@@ -9,11 +8,7 @@ class OrderOperationalError extends Error {
   }
 }
 
-/**
- * Persists a new development order request after validating relation constraints.
- */
 export async function createOrder(input: CreateOrderInput): Promise<OrderResponse> {
-  // 1. Pre-flight check: Verify target parent service exists and is active
   const targetService = await prisma.service.findUnique({
     where: { id: input.serviceId },
   });
@@ -26,7 +21,6 @@ export async function createOrder(input: CreateOrderInput): Promise<OrderRespons
     throw new OrderOperationalError(400, `Target service '${targetService.name}' is currently inactive and cannot accept orders`);
   }
 
-  // 2. Persist the valid order record. Status defaults automatically to PENDING at DB layer.
   const rawOrder = await prisma.order.create({
     data: {
       clientName: input.clientName,
@@ -41,31 +35,24 @@ export async function createOrder(input: CreateOrderInput): Promise<OrderRespons
     },
   });
 
-  // 3. Format Decimal into string to support safe JSON network transportation
   return {
     ...rawOrder,
     budget: rawOrder.budget ? rawOrder.budget.toString() : null,
   };
 }
 
-/**
- * Retrieves a single order record populated with basic parent service descriptors.
- */
 export async function getOrderById(id: string): Promise<OrderResponse> {
+  // Added mandatory 'deletedAt: null' condition to protect lookups from reading soft-deleted data
   const order = await prisma.order.findUnique({
     where: { id },
     include: {
       service: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-        },
+        select: { id: true, name: true, slug: true },
       },
     },
   });
 
-  if (!order) {
+  if (!order || order.deletedAt !== null) {
     throw new OrderOperationalError(404, `Order with ID ${id} not found`, 'NotFoundError');
   }
 
@@ -75,19 +62,15 @@ export async function getOrderById(id: string): Promise<OrderResponse> {
   };
 }
 
-/**
- * Searches and pagulates order rows against criteria using high-performance DB offsets.
- */
 export async function listOrders(filters: ListOrdersQueryInput) {
   const { status, serviceId, page = 1, limit = 20 } = filters;
   const skip = (page - 1) * limit;
 
-  // Build high-performance filtering criteria match mappings dynamically
-  const whereClause: Record<string, unknown> = {};
+  // Base filtering criteria forces 'deletedAt: null' to exclude hidden records automatically
+  const whereClause: Record<string, unknown> = { deletedAt: null };
   if (status) whereClause.status = status;
   if (serviceId) whereClause.serviceId = serviceId;
 
-  // Parallelize count and slice transactions to optimize execution speeds
   const [total, records] = await prisma.$transaction([
     prisma.order.count({ where: whereClause }),
     prisma.order.findMany({
@@ -97,17 +80,14 @@ export async function listOrders(filters: ListOrdersQueryInput) {
       orderBy: { createdAt: 'desc' },
       include: {
         service: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
+          select: { id: true, name: true, slug: true },
         },
       },
     }),
   ]);
 
-  const formattedData = records.map((record) => ({
+  // FIXED: Explicit type context applied to argument variable to satisfy TS7006 strict parameter restrictions
+  const formattedData = records.map((record: any) => ({
     ...record,
     budget: record.budget ? record.budget.toString() : null,
   }));
@@ -123,14 +103,10 @@ export async function listOrders(filters: ListOrdersQueryInput) {
   };
 }
 
-/**
- * Performs field modifications across records with relational foreign key tracking protections.
- */
 export async function updateOrder(id: string, input: UpdateOrderInput): Promise<OrderResponse> {
-  // Confirm record existence before modification attempt
+  // Re-uses getOrderById which guarantees the record is active and not soft-deleted
   await getOrderById(id);
 
-  // If serviceId is being reassigned, confirm destination target is valid and active
   if (input.serviceId) {
     const targetService = await prisma.service.findUnique({
       where: { id: input.serviceId },
@@ -157,15 +133,17 @@ export async function updateOrder(id: string, input: UpdateOrderInput): Promise<
   };
 }
 
-/**
- * Purges an order row completely out of the database instance.
- */
 export async function deleteOrder(id: string): Promise<OrderResponse> {
   await getOrderById(id);
-  const deleted = await prisma.order.delete({ where: { id } });
+
+  // Performed pure non-destructive state adjustment by applying a live transaction timestamp
+  const softDeleted = await prisma.order.update({
+    where: { id },
+    data: { deletedAt: new Date() },
+  });
   
   return {
-    ...deleted,
-    budget: deleted.budget ? deleted.budget.toString() : null,
+    ...softDeleted,
+    budget: softDeleted.budget ? softDeleted.budget.toString() : null,
   };
 }
