@@ -4,11 +4,11 @@ import { defineConfig } from "prisma/config";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
-  datasource: {
-    // Certified Fallback Matrix: Directs migrations over port 5432 cleanly on Render
-    url: process.env.DIRECT_URL ?? process.env.DATABASE_URL ?? "",
-  },
   migrations: {
     seed: "node --import tsx/esm prisma/seed.ts",
+  },
+  datasource: {
+    // FIXED: Uses a placeholder fallback string during builds to stop validation engine crashes
+    url: process.env.DIRECT_URL || process.env.DATABASE_URL || "postgresql://placeholder:placeholder@localhost:5432/placeholder",
   },
 });
