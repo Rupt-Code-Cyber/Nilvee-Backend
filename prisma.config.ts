@@ -1,4 +1,5 @@
 /// <reference types="node" />
+import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
 export default defineConfig({
@@ -7,7 +8,7 @@ export default defineConfig({
     seed: "node --import tsx/esm prisma/seed.ts",
   },
   datasource: {
-    // Hardcoded directly to your cloud Supabase database on port 5432 to completely bypass Render text box formatting bugs
-    url: "postgresql://postgres.ucoktkheabwfkrgdwtfk:N1lvee_Cyber_Agency_Prod_2026_Secure_Key@://supabase.com",
+    // FIXED: Falling back to an empty string avoids P1013 host errors during type-check builds
+    url: process.env.DIRECT_URL || process.env.DATABASE_URL || "",
   },
 });
