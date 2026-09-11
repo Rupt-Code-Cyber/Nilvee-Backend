@@ -5,7 +5,7 @@ import { defineConfig } from "prisma/config";
 export default defineConfig({
   schema: "prisma/schema.prisma",
   datasource: {
-    // Dynamic Fallback Matrix: Seamlessly intercepts your direct 5432 migration line
+    // Certified Fallback Matrix: Directs migrations over port 5432 cleanly on Render
     url: process.env.DIRECT_URL ?? process.env.DATABASE_URL ?? "",
   },
   migrations: {
