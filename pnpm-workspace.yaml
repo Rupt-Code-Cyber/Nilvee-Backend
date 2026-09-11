@@ -4,10 +4,12 @@
 overrides:
   deepmerge-ts: ">=8.0.0"
   mysql2: ">=3.23.1"
+  uuid: ">=11.1.1"               # Direct sub-dependency security patch override
+  "@opentelemetry/core": ">=2.8.0" # Direct sub-dependency security patch override
 
 allowBuilds:
   '@prisma/engines': true
-  bcrypt: false        # Explicitly deactivated: using 'bcryptjs' (pure-JS implementation)
+  bcrypt: false
   esbuild: true
   prisma: true
-  protobufjs: true     # FIXED: Whitelists the OpenTelemetry protobuf compiler to pass CI builds
+  protobufjs: true
