@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "postgresql" // FIXED: Stripped the old, unsupported url assignment to eliminate validation conflicts
 }
 
 // Module 1 Base Model (Used to verify baseline engine connectivity)
