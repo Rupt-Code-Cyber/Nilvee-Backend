@@ -1,14 +1,14 @@
 import pg from 'pg';
 
-// FIXED: Breaking the parameters down into an absolute configuration object completely bypasses string parsing traps and hidden newlines.
+// FIXED: Clean configuration keys containing the isolated connection profiles with zero URL strings or typos
 const pool = new pg.Pool({
   user: 'postgres.ucoktkheabwfkrgdwtfk',
   password: 'N1lvee_Cyber_Agency_Prod_2026_Secure_Key',
-  host: '://supabase.com',
+  host: 'aws-0-eu-central-1.pooler.supabase.com',
   port: 5432,
   database: 'postgres',
   ssl: {
-    rejectUnauthorized: false // Required to securely bypass strict SSL handshake blocks on Supabase
+    rejectUnauthorized: false
   }
 });
 
@@ -25,10 +25,9 @@ const agencyServices = [
 
 async function seed() {
   console.log('🌱 Initializing safe configuration data seeding sequence...');
-  const client = await pool.connect();
-  
+  let client;
   try {
-    await client.query('SELECT 1');
+    client = await pool.connect();
     console.log('📡 Connected directly to Supabase cloud cluster securely over port 5432.');
 
     for (const service of agencyServices) {
@@ -46,7 +45,7 @@ async function seed() {
   } catch (error) {
     console.error('❌ Data seeding operation encountered an exception:', error);
   } finally {
-    client.release();
+    if (client) client.release();
     await pool.end();
   }
 }
