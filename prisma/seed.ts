@@ -1,14 +1,16 @@
 /// <reference types="node" />
 import "dotenv/config";
-import { PrismaClient } from '@prisma/client';
+import pg from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@prisma/client';
 
-// Initialize the standard explicit Prisma 7 driver adapter using your connection URL string
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL
-});
+// Initialize a native Node-postgres TCP connection pool matching your runtime environment strings
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 
-// Pass the adapter directly into the isolated client constructor instance
+// Map the physical pool socket interface directly over into the Prisma adapter layer
+const adapter = new PrismaPg(pool);
+
+// Pass the adapter directly into the isolated client constructor instance for Prisma v7 compatibility
 const prisma = new PrismaClient({ adapter });
 
 const agencyServices = [
@@ -85,4 +87,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end(); // Cleanly close the raw database socket pool loops
   });
